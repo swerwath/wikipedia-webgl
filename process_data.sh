@@ -8,5 +8,8 @@ echo Performing inital data formatting...
 sed -i "" "s/),(/~/g" data/raw/dump.sql
 tr '~' '\n' < data/raw/dump.sql > data/processed/processed_tmp.txt
 rm data/raw/dump.sql
+echo Transforming SQL data to JSON...
+python sql_to_json.py -i data/processed/processed_tmp.txt
+rm data/processed/processed_tmp.txt
 
 echo Done
