@@ -26,13 +26,13 @@ with open(args.input) as f:
                     label = types_to_find[data[7][1:-1]]
                     types[label][(lat, lon)] = types[label][(lat, lon)] + 1 if (lat, lon) in types[label] else 1
 
-json_obj = {}
+json_obj = []
 for k, v in types.iteritems():
-    json_obj[k] = []
+    json_obj.append([k, []])
     for loc, mag in v.iteritems():
-        json_obj[k].append(loc[0])
-        json_obj[k].append(loc[1])
-        json_obj[k].append(mag)
+        json_obj[-1][-1].append(loc[0])
+        json_obj[-1][-1].append(loc[1])
+        json_obj[-1][-1].append(mag)
 
 json_string = json.dumps(json_obj)
 target = 'data/processed/data.json'
