@@ -9,7 +9,7 @@ args = parser.parse_args()
 
 rounding_factor = 10 ** int(args.rounding)
 
-types_to_find = {'glacier':'Glaciers', 'city':'Cities', 'landmark':'Landmarks', 'edu':'Educational', 'mountain':'Mountains', 'airport':'Airports', 'event':'Events'}
+types_to_find = {'glacier':'Glaciers', 'city':'Cities', 'edu':'Educational', 'mountain':'Mountains', 'airport':'Airports', 'event':'Events'}
 types = {}
 for k,v in types_to_find.iteritems():
     types[v] = {}
