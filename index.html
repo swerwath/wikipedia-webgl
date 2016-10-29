@@ -110,7 +110,6 @@
   </div>
 
   <div id="currentInfo">
-    <span id="catall_types" class="category"><p>All</p></span>
     <span id="catGlaciers" class="category"><p>Glaciers</p></span>
     <span id="catCities" class="category"><p>Cities</p></span>
     <span id="catLandmarks" class="category"><p>Landmarks</p></span>
@@ -138,7 +137,7 @@
       Detector.addGetWebGLMessage();
     } else {
 
-      var categories = ['all_types','Glaciers','Cities', 'Landmarks', 'Educational', 'Mountains', 'Airports', 'Events'];
+      var categories = ['Glaciers','Cities', 'Landmarks', 'Educational', 'Mountains', 'Airports', 'Events'];
       var container = document.getElementById('container');
       var globe = new DAT.Globe(container);
 

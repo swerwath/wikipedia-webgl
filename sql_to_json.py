@@ -10,7 +10,7 @@ args = parser.parse_args()
 rounding_factor = 10 ** int(args.rounding)
 
 types_to_find = {'glacier':'Glaciers', 'city':'Cities', 'landmark':'Landmarks', 'edu':'Educational', 'mountain':'Mountains', 'airport':'Airports', 'event':'Events'}
-types = {'all_types':{}}
+types = {}
 for k,v in types_to_find.iteritems():
     types[v] = {}
 
@@ -21,7 +21,6 @@ with open(args.input) as f:
             if data[2] == '\'earth\'':
                 lat = math.ceil(float(data[4]) * rounding_factor) / rounding_factor
                 lon = math.ceil(float(data[5]) * rounding_factor) / rounding_factor
-                types['all_types'][(lat, lon)] = types['all_types'][(lat, lon)] + 1 if (lat, lon) in types['all_types'] else 1
                 if data[7][1:-1] in types_to_find:
                     label = types_to_find[data[7][1:-1]]
                     types[label][(lat, lon)] = types[label][(lat, lon)] + 1 if (lat, lon) in types[label] else 1
