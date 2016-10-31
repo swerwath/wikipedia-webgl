@@ -2,3 +2,4 @@
 data/raw/*
 data/processed/*.txt
 *~
+*/.DS_Store
