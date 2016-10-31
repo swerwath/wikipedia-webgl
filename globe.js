@@ -1,6 +1,6 @@
 /**
  * dat.globe Javascript WebGL Globe Toolkit
- * https://github.com/dataarts/webgl-globe
+ * http://dataarts.github.com/dat.globe
  *
  * Copyright 2011 Data Arts Team, Google Creative Lab
  *
@@ -13,20 +13,18 @@
 
 var DAT = DAT || {};
 
-DAT.Globe = function(container, opts) {
-  opts = opts || {};
+DAT.Globe = function(container, colorFn) {
 
-  var colorFn = opts.colorFn || function(x) {
+  colorFn = colorFn || function(x) {
     var c = new THREE.Color();
-    c.setHSL( ( 0.6 - ( x * 0.5 ) ), 1.0, 0.5 );
+    c.setHSV( ( 0.6 - ( x * 0.5 ) ), 1.0, 1.0 );
     return c;
   };
-  var imgDir = opts.imgDir || './';
 
   var Shaders = {
     'earth' : {
       uniforms: {
-        'texture': { type: 't', value: null }
+        'texture': { type: 't', value: 0, texture: null }
       },
       vertexShader: [
         'varying vec3 vNormal;',
@@ -68,10 +66,12 @@ DAT.Globe = function(container, opts) {
     }
   };
 
-  var camera, scene, renderer, w, h;
-  var mesh, atmosphere, point;
+  var camera, scene, sceneAtmosphere, renderer, w, h;
+  var vector, mesh, atmosphere, point;
 
   var overRenderer;
+
+  var imgDir = '/';
 
   var curZoomSpeed = 0;
   var zoomSpeed = 50;
@@ -94,19 +94,24 @@ DAT.Globe = function(container, opts) {
     w = container.offsetWidth || window.innerWidth;
     h = container.offsetHeight || window.innerHeight;
 
-    camera = new THREE.PerspectiveCamera(30, w / h, 1, 10000);
+    camera = new THREE.Camera(
+        30, w / h, 1, 10000);
     camera.position.z = distance;
 
-    scene = new THREE.Scene();
+    vector = new THREE.Vector3();
 
-    var geometry = new THREE.SphereGeometry(200, 40, 30);
+    scene = new THREE.Scene();
+    sceneAtmosphere = new THREE.Scene();
+
+    var geometry = new THREE.Sphere(200, 40, 30);
 
     shader = Shaders['earth'];
     uniforms = THREE.UniformsUtils.clone(shader.uniforms);
 
-    uniforms['texture'].value = THREE.ImageUtils.loadTexture('./globe/world.jpg');
+    uniforms['texture'].texture = THREE.ImageUtils.loadTexture(imgDir+'world' +
+        '.jpg');
 
-    material = new THREE.ShaderMaterial({
+    material = new THREE.MeshShaderMaterial({
 
           uniforms: uniforms,
           vertexShader: shader.vertexShader,
@@ -115,33 +120,42 @@ DAT.Globe = function(container, opts) {
         });
 
     mesh = new THREE.Mesh(geometry, material);
-    mesh.rotation.y = Math.PI;
-    scene.add(mesh);
+    mesh.matrixAutoUpdate = false;
+    scene.addObject(mesh);
 
     shader = Shaders['atmosphere'];
     uniforms = THREE.UniformsUtils.clone(shader.uniforms);
 
-    material = new THREE.ShaderMaterial({
+    material = new THREE.MeshShaderMaterial({
 
           uniforms: uniforms,
           vertexShader: shader.vertexShader,
-          fragmentShader: shader.fragmentShader,
-          side: THREE.BackSide,
-          blending: THREE.AdditiveBlending,
-          transparent: true
+          fragmentShader: shader.fragmentShader
 
         });
 
     mesh = new THREE.Mesh(geometry, material);
-    mesh.scale.set( 1.1, 1.1, 1.1 );
-    scene.add(mesh);
+    mesh.scale.x = mesh.scale.y = mesh.scale.z = 1.1;
+    mesh.flipSided = true;
+    mesh.matrixAutoUpdate = false;
+    mesh.updateMatrix();
+    sceneAtmosphere.addObject(mesh);
 
-    geometry = new THREE.BoxGeometry(0.75, 0.75, 1);
-    geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0,0,-0.5));
+    geometry = new THREE.Cube(0.75, 0.75, 1, 1, 1, 1, null, false, { px: true,
+          nx: true, py: true, ny: true, pz: false, nz: true});
+
+    for (var i = 0; i < geometry.vertices.length; i++) {
+
+      var vertex = geometry.vertices[i];
+      vertex.position.z += 0.5;
+
+    }
 
     point = new THREE.Mesh(geometry);
 
     renderer = new THREE.WebGLRenderer({antialias: true});
+    renderer.autoClear = false;
+    renderer.setClearColorHex(0x000000, 0.0);
     renderer.setSize(w, h);
 
     renderer.domElement.style.position = 'absolute';
@@ -165,12 +179,13 @@ DAT.Globe = function(container, opts) {
     }, false);
   }
 
-  function addData(data, opts) {
+  addData = function(data, opts) {
     var lat, lng, size, color, i, step, colorFnWrapper;
 
     opts.animated = opts.animated || false;
     this.is_animated = opts.animated;
     opts.format = opts.format || 'magnitude'; // other option is 'legend'
+    console.log(opts.format);
     if (opts.format === 'magnitude') {
       step = 3;
       colorFnWrapper = function(data, i) { return colorFn(data[i+2]); }
@@ -241,12 +256,11 @@ DAT.Globe = function(container, opts) {
               morphTargets: true
             }));
       }
-      scene.add(this.points);
+      scene.addObject(this.points);
     }
   }
 
   function addPoint(lat, lng, size, color, subgeo) {
-
     var phi = (90 - lat) * Math.PI / 180;
     var theta = (180 - lng) * Math.PI / 180;
 
@@ -256,18 +270,17 @@ DAT.Globe = function(container, opts) {
 
     point.lookAt(mesh.position);
 
-    point.scale.z = Math.max( size, 0.1 ); // avoid non-invertible matrix
+    point.scale.z = -size;
     point.updateMatrix();
 
-    for (var i = 0; i < point.geometry.faces.length; i++) {
+    var i;
+    for (i = 0; i < point.geometry.faces.length; i++) {
 
       point.geometry.faces[i].color = color;
 
     }
-    if(point.matrixAutoUpdate){
-      point.updateMatrix();
-    }
-    subgeo.merge(point.geometry, point.matrix);
+
+    GeometryUtils.merge(subgeo, point);
   }
 
   function onMouseDown(event) {
@@ -334,9 +347,10 @@ DAT.Globe = function(container, opts) {
   }
 
   function onWindowResize( event ) {
-    camera.aspect = container.offsetWidth / container.offsetHeight;
+    console.log('resize');
+    camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize( container.offsetWidth, container.offsetHeight );
+    renderer.setSize( window.innerWidth, window.innerHeight );
   }
 
   function zoom(delta) {
@@ -361,9 +375,11 @@ DAT.Globe = function(container, opts) {
     camera.position.y = distance * Math.sin(rotation.y);
     camera.position.z = distance * Math.cos(rotation.x) * Math.cos(rotation.y);
 
-    camera.lookAt(mesh.position);
+    vector.copy(camera.position);
 
+    renderer.clear();
     renderer.render(scene, camera);
+    renderer.render(sceneAtmosphere, camera);
   }
 
   init();
